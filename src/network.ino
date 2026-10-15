@@ -16,6 +16,20 @@
 void connectToWifi()
 {
   Serial.print("Connecting to Wi-Fi ");
+
+  // 一度STAモードを初期化してから設定を上書きします
+  WiFi.mode(WIFI_STA);
+  
+  wifi_config_t config;
+  esp_wifi_get_config(WIFI_IF_STA, &config);
+  
+  // 最初に見つけたAPではなく、全チャンネルをスキャンする設定に変更
+  config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN; 
+  // 見つかったAPを電波強度（RSSI）が強い順にソートして接続する設定に変更
+  config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL; 
+  
+  esp_wifi_set_config(WIFI_IF_STA, &config);
+
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED)
   {
