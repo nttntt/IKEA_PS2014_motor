@@ -4,6 +4,7 @@
 #include <ESPmDNS.h>
 #include <FastLED.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 
 /* Function Prototype  */
 uint8_t motionControl(void);
