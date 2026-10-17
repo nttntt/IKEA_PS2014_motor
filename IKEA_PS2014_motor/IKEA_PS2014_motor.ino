@@ -4,7 +4,6 @@
 #include <ESPmDNS.h>
 #include <FastLED.h>
 #include <WiFi.h>
-#include <esp_wifi.h>
 
 /* Function Prototype  */
 uint8_t motionControl(void);
@@ -26,7 +25,7 @@ void explosion(void);
 CRGB currentColor(uint8_t);
 
 // ルーター接続情報
-#define WIFI_SSID "0856g"
+#define WIFI_SSID     "Bancho_IoT"
 #define WIFI_PASSWORD "nttnttntt"
 // OTA Hostname
 #define DEVICE_NAME "IKEA_PS2014"

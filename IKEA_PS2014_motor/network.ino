@@ -1,45 +1,67 @@
-/* マルチタスクでOTA待ち受け */
-/*void OTATask(void *pvParameters)
-{
-  connectToWifi();  // Wi-Fiルーターに接続する
-//  startMDNS();      // Multicast DNS
-  startOTA();
-
- while (true)
-  {
-    ArduinoOTA.handle();
-    delay(1);
-  }
-}
-
 /* Wi-Fiルーターに接続する */
 void connectToWifi()
 {
-  Serial.print("Connecting to Wi-Fi ");
+    Serial.println("\nScanning APs...");
 
-  // 一度STAモードを初期化してから設定を上書きします
-  WiFi.mode(WIFI_STA);
-  
-  wifi_config_t config;
-  esp_wifi_get_config(WIFI_IF_STA, &config);
-  
-  // 最初に見つけたAPではなく、全チャンネルをスキャンする設定に変更
-  config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN; 
-  // 見つかったAPを電波強度（RSSI）が強い順にソートして接続する設定に変更
-  config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL; 
-  
-  esp_wifi_set_config(WIFI_IF_STA, &config);
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect(false);
 
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(".");
-  }
-  // モニターにローカル IPアドレスを表示する
-  Serial.println("WiFi connected.");
-  Serial.print("  *IP address: ");
-  Serial.println(WiFi.localIP());
+    int n = WiFi.scanNetworks();
+
+    int targetIndex = -1;
+    int bestRSSI = -1000;
+
+    for (int i = 0; i < n; i++)
+    {
+        if (WiFi.SSID(i) == WIFI_SSID)
+        {
+            int rssi = WiFi.RSSI(i);
+
+            Serial.printf("Found: BSSID=%s CH=%2d RSSI=%3d\n", WiFi.BSSIDstr(i).c_str(), WiFi.channel(i), rssi);
+
+            if (rssi > bestRSSI)
+            {
+                bestRSSI = rssi;
+                targetIndex = i;
+            }
+        }
+    }
+
+    if (targetIndex != -1)
+    {
+        uint8_t bssid[6];
+        memcpy(bssid, WiFi.BSSID(targetIndex), 6);
+
+        int channel = WiFi.channel(targetIndex);
+
+        WiFi.begin(
+            WIFI_SSID,
+            WIFI_PASSWORD,
+            channel,
+            bssid,
+            true);
+
+        Serial.print("Connecting");
+
+        while (WiFi.status() != WL_CONNECTED)
+        {
+            delay(500);
+            Serial.print(".");
+        }
+
+        Serial.println();
+        Serial.println("WiFi connected");
+        Serial.printf("IP Address : %s\n", WiFi.localIP().toString().c_str());
+        Serial.printf("Connected BSSID : %s\n", WiFi.BSSIDstr().c_str());
+        Serial.printf("Connected CH    : %d\n", WiFi.channel());
+        Serial.printf("Connected RSSI  : %d\n", WiFi.RSSI());
+    }
+    else
+    {
+        Serial.println("No AP found");
+    }
+
+    WiFi.scanDelete();
 }
 
 /* Multicast DNSを開始する */
