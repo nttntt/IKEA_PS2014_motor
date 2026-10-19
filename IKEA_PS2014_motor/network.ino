@@ -1,67 +1,56 @@
 /* Wi-Fiルーターに接続する */
-void connectToWifi()
-{
-    Serial.println("\nScanning APs...");
+void connectToWifi() {
+  Serial.print("\nScanning ");
+  Serial.println(WIFI_SSID);
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect(false);
 
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect(false);
+  int n = WiFi.scanNetworks();
 
-    int n = WiFi.scanNetworks();
+  int targetIndex = -1;
+  int bestRSSI = -1000;
 
-    int targetIndex = -1;
-    int bestRSSI = -1000;
+  for (int i = 0; i < n; i++) {
+    int rssi = WiFi.RSSI(i);
+    Serial.printf("Found: SSID=%-32s BSSID=%s CH=%2d RSSI=%3d\n", WiFi.SSID(i).c_str(), WiFi.BSSIDstr(i).c_str(), WiFi.channel(i), rssi);
+    if (WiFi.SSID(i) == WIFI_SSID) {
+      if (rssi > bestRSSI) {
+        bestRSSI = rssi;
+        targetIndex = i;
+      }
+    }
+  }
 
-    for (int i = 0; i < n; i++)
-    {
-        if (WiFi.SSID(i) == WIFI_SSID)
-        {
-            int rssi = WiFi.RSSI(i);
+  if (targetIndex != -1) {
+    uint8_t bssid[6];
+    memcpy(bssid, WiFi.BSSID(targetIndex), 6);
+    int channel = WiFi.channel(targetIndex);
 
-            Serial.printf("Found: BSSID=%s CH=%2d RSSI=%3d\n", WiFi.BSSIDstr(i).c_str(), WiFi.channel(i), rssi);
+    WiFi.begin(
+      WIFI_SSID,
+      WIFI_PASSWORD,
+      channel,
+      bssid,
+      true);
 
-            if (rssi > bestRSSI)
-            {
-                bestRSSI = rssi;
-                targetIndex = i;
-            }
-        }
+    Serial.print("Connecting");
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
     }
 
-    if (targetIndex != -1)
-    {
-        uint8_t bssid[6];
-        memcpy(bssid, WiFi.BSSID(targetIndex), 6);
+    Serial.printf("\nConnected to %s\n", WiFi.SSID(targetIndex).c_str());
+    Serial.printf("BSSID: %s\n", WiFi.BSSIDstr(targetIndex).c_str());
+    Serial.printf("CH   : %2d\n", channel);
+    Serial.printf("RSSI : %3d\n", WiFi.RSSI(targetIndex));
+    Serial.printf("IP Address : %s\n", WiFi.localIP().toString().c_str());
 
-        int channel = WiFi.channel(targetIndex);
+  } else {
+    Serial.print(WIFI_SSID);
+    Serial.println(" not found");
+  }
 
-        WiFi.begin(
-            WIFI_SSID,
-            WIFI_PASSWORD,
-            channel,
-            bssid,
-            true);
-
-        Serial.print("Connecting");
-
-        while (WiFi.status() != WL_CONNECTED)
-        {
-            delay(500);
-            Serial.print(".");
-        }
-
-        Serial.println();
-        Serial.println("WiFi connected");
-        Serial.printf("IP Address : %s\n", WiFi.localIP().toString().c_str());
-        Serial.printf("Connected BSSID : %s\n", WiFi.BSSIDstr().c_str());
-        Serial.printf("Connected CH    : %d\n", WiFi.channel());
-        Serial.printf("Connected RSSI  : %d\n", WiFi.RSSI());
-    }
-    else
-    {
-        Serial.println("No AP found");
-    }
-
-    WiFi.scanDelete();
+  WiFi.scanDelete();
 }
 
 /* Multicast DNSを開始する */
